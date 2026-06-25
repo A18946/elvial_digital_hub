@@ -43,7 +43,7 @@ useEffect(() => {
         console.log("🔴 Using fallback URL");
 
         const fallback = await fetch(
-          `https://darkcyan-koala-320694.hostingersite.com/jsonapi/menu_items/main`
+          `/api/menu`
         );
 
         const json = await fallback.json();
