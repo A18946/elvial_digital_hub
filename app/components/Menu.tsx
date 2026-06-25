@@ -12,118 +12,156 @@ type MenuItem = {
     weight: number;
     enabled: boolean;
   };
+  children?: MenuItem[];
 };
 
 export default function Menu() {
   const [open, setOpen] = useState(false);
-  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [tree, setTree] = useState<MenuItem[]>([]);
   const { lang } = useLanguage();
 
-  // Fetch μενού όταν αλλάζει η γλώσσα
+  const linksMap = {
+    "hinged systems": "/page/hinged-systems",
+    "sliding systems": "/page/sliding-systems",
+    "folding doors": "/page/folding-doors",
+    "entrance doors": "/page/entrance-doors",
+    "facades systems": "/page/facades",
+    "outdoor systems": "/page/outdoor",
+    "sun shading systems": "/page/sun-shading",
+    "various": "/page/various",
+    "digital services": "/page/digital-services",
+  };
+
+  // ✅ BUILD TREE (NEW)
+ function buildTree(items) {
+  const map = {};
+  const roots = [];
+
+  items.forEach((item) => {
+    map[item.id] = { ...item, children: [] };
+  });
+
+  items.forEach((item) => {
+    const parent = item.attributes.parent;
+
+    if (!parent || parent === "") {
+      roots.push(map[item.id]);
+    } else {
+      if (map[parent]) {
+        map[parent].children.push(map[item.id]);
+      }
+    }
+  });
+
+  return roots;
+}
+
+
+  // ✅ FETCH
   useEffect(() => {
     async function fetchMenu() {
       try {
-        const res = await fetch(
-          `https://darkcyan-koala-320694.hostingersite.com/${lang}/jsonapi/menu_items/main`,
-          { cache: "no-store" }
-        );
-        if (!res.ok) {
-          // fallback χωρίς locale
-          const fallback = await fetch(
-            `/api/menu`
-          );
-          const json = await fallback.json();
-          setMenuItems(json.data || []);
-          return;
-        }
+        const res = await fetch("/api/menu");
         const json = await res.json();
-        setMenuItems(json.data || []);
+
+        const data = json.data || [];
+
+        console.log("✅ RAW menu:", data);
+
+        const built = buildTree(data);
+
+        console.log("🌳 TREE:", built);
+
+        setTree(built);
       } catch (e) {
-        console.error("Menu fetch error:", e);
+        console.error("❌ Menu fetch error:", e);
       }
     }
 
     fetchMenu();
-  }, [lang]); // ← ξανατρέχει όταν αλλάζει γλώσσα
+  }, [lang]);
 
-  const enabled = menuItems.filter((i) => i.attributes.enabled);
-
-  const topLevel = enabled
-    .filter((i) => !i.attributes.parent)
-    .sort((a, b) => a.attributes.weight - b.attributes.weight);
-
-  const getChildren = (parentId: string) =>
-    enabled
-      .filter((i) => i.attributes.parent?.includes(parentId))
-      .sort((a, b) => a.attributes.weight - b.attributes.weight);
-
+  // ✅ FIX URL
   const fixUrl = (url: string) => {
-    if (!url || url === "") return "#";
+    if (!url) return "#";
     if (url.startsWith("http")) return url;
-    return url;
+    return url.startsWith("/") ? url : `/${url}`;
   };
+
+  // ✅ RECURSIVE RENDER (NEW)
+  function renderMenu(items: MenuItem[]) {
+    return (
+      <div>
+        {items.map((item) => {
+          const isExternal = item.attributes.url?.startsWith("http");
+          
+        const titleKey = item.attributes.title?.toLowerCase().trim();
+
+        const href = linksMap[titleKey] || fixUrl(item.attributes.url);
+
+
+          return (
+            <div key={item.id} style={{ marginBottom: 15 }}>
+              <a
+                href={href}
+                target={isExternal ? "_blank" : undefined}
+                rel={isExternal ? "noopener noreferrer" : undefined}
+                style={{ textDecoration: "none", color: "black" }}
+              >
+                <strong>{item.attributes.title}</strong>
+              </a>
+
+              {item.children && item.children.length > 0 && (
+                <div style={{ marginLeft: 15, marginTop: 5 }}>
+                  {renderMenu(item.children)}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
 
   return (
     <>
-      <div style={{ padding: 10, borderBottom: "1px solid #ddd", display: "flex", alignItems: "center", gap: 10 }}>
+      <div
+        style={{
+          padding: 10,
+          borderBottom: "1px solid #ddd",
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+        }}
+      >
         <a href="/">{lang === "en" ? "Home" : "Αρχική"}</a>
         <span>|</span>
-        <button onClick={() => setOpen(true)}>{lang === "en" ? "Menu" : "Μενού"}</button>
+        <button onClick={() => setOpen(true)}>
+          {lang === "en" ? "Menu" : "Μενού"}
+        </button>
       </div>
 
       {open && (
-        <div style={{
-          position: "fixed", top: 0, left: 0,
-          width: "350px", height: "100vh",
-          background: "#fff", padding: "30px 25px",
-          overflowY: "auto", zIndex: 1000,
-          boxShadow: "5px 0 15px rgba(0,0,0,0.2)",
-        }}>
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "350px",
+            height: "100vh",
+            background: "#fff",
+            padding: "30px 25px",
+            overflowY: "auto",
+            zIndex: 1000,
+            boxShadow: "5px 0 15px rgba(0,0,0,0.2)",
+          }}
+        >
           <div style={{ marginBottom: 20 }}>
             <button onClick={() => setOpen(false)}>✕</button>
           </div>
 
-          {topLevel.map((item) => {
-            const children = getChildren(item.id);
-            const isExternal = item.attributes.url?.startsWith("http");
-            const href = fixUrl(item.attributes.url);
-
-            return (
-              <div key={item.id} style={{ marginBottom: 20 }}>
-                <h2 style={{ fontWeight: "bold", marginBottom: 8 }}>
-                  <a
-                    href={href}
-                    target={isExternal ? "_blank" : undefined}
-                    rel={isExternal ? "noopener noreferrer" : undefined}
-                    style={{ textDecoration: "none", color: "black" }}
-                  >
-                    {item.attributes.title}
-                  </a>
-                </h2>
-
-                {children.length > 0 && (
-                  <div style={{ marginLeft: 10, lineHeight: "2" }}>
-                    {children.map((child) => {
-                      const childExternal = child.attributes.url?.startsWith("http");
-                      const childHref = fixUrl(child.attributes.url);
-                      return (
-                        <div key={child.id}>
-                          <a
-                            href={childHref}
-                            target={childExternal ? "_blank" : undefined}
-                            rel={childExternal ? "noopener noreferrer" : undefined}
-                            style={{ textDecoration: "none", color: "#333" }}
-                          >
-                            {child.attributes.title}
-                          </a>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            );
-          })}
+          {/* ✅ FULL TREE */}
+          {renderMenu(tree)}
         </div>
       )}
     </>
