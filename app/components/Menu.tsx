@@ -8,9 +8,15 @@ type MenuItem = {
   attributes: {
     title: string;
     url: string;
-    parent: string;
     weight: number;
     enabled: boolean;
+  };
+  relationships?: {
+    parent?: {
+      data?: {
+        id: string;
+      } | null;
+    };
   };
 };
 
@@ -20,28 +26,42 @@ export default function Menu() {
   const { lang } = useLanguage();
 
   // Fetch μενού όταν αλλάζει η γλώσσα
-  useEffect(() => {
-    async function fetchMenu() {
-      try {
-        const res = await fetch(
-          `https://darkcyan-koala-320694.hostingersite.com/${lang}/jsonapi/menu_items/main`,
-          { cache: "no-store" }
+  
+useEffect(() => {
+  async function fetchMenu() {
+    try {
+      console.log("🔵 Fetching menu for lang:", lang);
+
+      const res = await fetch(
+        `https://darkcyan-koala-320694.hostingersite.com/${lang}/jsonapi/menu_items/main`,
+        { cache: "no-store" }
+      );
+
+      console.log("🟡 Response status:", res.status);
+
+      if (!res.ok) {
+        console.log("🔴 Using fallback URL");
+
+        const fallback = await fetch(
+          `https://darkcyan-koala-320694.hostingersite.com/jsonapi/menu_items/main`
         );
-        if (!res.ok) {
-          // fallback χωρίς locale
-          const fallback = await fetch(
-            `https://darkcyan-koala-320694.hostingersite.com/jsonapi/menu_items/main`
-          );
-          const json = await fallback.json();
-          setMenuItems(json.data || []);
-          return;
-        }
-        const json = await res.json();
+
+        const json = await fallback.json();
+        console.log("🟣 Fallback data:", json);
+
         setMenuItems(json.data || []);
-      } catch (e) {
-        console.error("Menu fetch error:", e);
+        return;
       }
+
+      const json = await res.json();
+      console.log("🟢 Menu data:", json);
+
+      setMenuItems(json.data || []);
+    } catch (e) {
+      console.error("❌ Menu fetch error:", e);
     }
+  }
+
 
     fetchMenu();
   }, [lang]); // ← ξανατρέχει όταν αλλάζει γλώσσα
@@ -49,12 +69,12 @@ export default function Menu() {
   const enabled = menuItems.filter((i) => i.attributes.enabled);
 
   const topLevel = enabled
-    .filter((i) => !i.attributes.parent)
+    .filter((i) => !i.relationships?.parent?.data)
     .sort((a, b) => a.attributes.weight - b.attributes.weight);
-
+  console.log("✅ topLevel:", topLevel);
   const getChildren = (parentId: string) =>
     enabled
-      .filter((i) => i.attributes.parent?.endsWith(parentId))
+      .filter((i) => i.relationships?.parent?.data?.id === parentId)
       .sort((a, b) => a.attributes.weight - b.attributes.weight);
 
   const fixUrl = (url: string) => {
@@ -62,7 +82,7 @@ export default function Menu() {
     if (url.startsWith("http")) return url;
     return url;
   };
-
+  console.log("✅ menuItems:", menuItems);
   return (
     <>
       <div style={{ padding: 10, borderBottom: "1px solid #ddd", display: "flex", alignItems: "center", gap: 10 }}>
