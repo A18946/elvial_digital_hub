@@ -61,7 +61,7 @@ export default function Menu() {
   useEffect(() => {
     async function fetchMenu() {
       try {
-        const res = await fetch("/api/menu");
+        const res = await fetch(`/api/menu?lang=${lang}`);
         const json = await res.json();
 
         const data = json.data || [];

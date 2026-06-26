@@ -1,22 +1,28 @@
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    console.log("👉 CALLING DRUPAL");
+    const { searchParams } = new URL(request.url);
+    const lang = searchParams.get("lang") || "en";
 
+    // Δοκίμασε με language prefix στο URL
     const res = await fetch(
-      "https://darkcyan-koala-320694.hostingersite.com/jsonapi/menu_items/main"
+      `https://darkcyan-koala-320694.hostingersite.com/${lang}/jsonapi/menu_items/main`,
+      { cache: "no-store" }
     );
 
-    console.log("👉 STATUS:", res.status);
+    if (!res.ok) {
+      // Fallback χωρίς prefix
+      const fallback = await fetch(
+        `https://darkcyan-koala-320694.hostingersite.com/jsonapi/menu_items/main`,
+        { cache: "no-store" }
+      );
+      const data = await fallback.json();
+      return Response.json(data);
+    }
 
-    const text = await res.text();
-    console.log("👉 RAW RESPONSE:", text);
-
-    return new Response(text, {
-      headers: { "Content-Type": "application/json" },
-    });
+    const data = await res.json();
+    return Response.json(data);
   } catch (e) {
-    console.error("🔥 ERROR:", e);
-
-    return Response.json({ error: "fetch failed" }, { status: 500 });
+    console.error("API ERROR:", e);
+    return Response.json({ data: [] });
   }
 }
