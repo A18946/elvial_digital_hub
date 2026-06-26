@@ -39,14 +39,35 @@ async function getHome() {
   return res.json();
 }
 
-async function getCategories() {
+async function getCategories(lang: string = "en") {
   const res = await fetch(
-    "https://darkcyan-koala-320694.hostingersite.com/api/categories",
+    "https://darkcyan-koala-320694.hostingersite.com/api/categories?langcode=el",
     { cache: "no-store" }
   );
 
   if (!res.ok) return [];
-  return res.json();
+  const data = await res.json();
+  console.log("ALL CATEGORIES RAW:", data.map((c: any) => ({
+  name: c.name?.[0]?.value,
+  langcode: c.langcode?.[0]?.value,
+  tid: c.tid?.[0]?.value
+})));
+
+  // Κράτα μόνο τα items με το σωστό langcode
+  const filtered = data.filter((cat: any) => 
+    cat.langcode?.[0]?.value === lang
+  );
+  
+// ✅ SORT BY WEIGHT
+const sorted = filtered.sort((a: any, b: any) => {
+  const wA = a.weight?.[0]?.value || 0;
+  const wB = b.weight?.[0]?.value || 0;
+  return wA - wB;
+});
+
+return sorted.length > 0 ? sorted : data;
+
+return filtered.length > 0 ? filtered : data;
 }
 
 
@@ -54,8 +75,12 @@ async function getCategories() {
 
 export default async function Home() {
   const page = await getHome();
-  const categories = await getCategories();
-
+  const categories = await getCategories("en");
+  console.log("CATEGORIES COUNT:", categories.length);
+console.log("CATEGORIES:", categories.map((c: any) => ({
+  name: c.name?.[0]?.value,
+  langcode: c.langcode?.[0]?.value
+})));
   const node = page?.[0];
 
   const items = await Promise.all(
