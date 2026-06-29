@@ -1,22 +1,22 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState } from "react";
 
 const LanguageContext = createContext(null);
 
 export function LanguageProvider({ children }) {
-  const [lang, setLangState] = useState("en");
+  const [lang, setLangState] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("lang") || "en";
+    }
+    return "en";
+  });
 
-  // Διάβασε από localStorage κατά το mount
-  useEffect(() => {
-    const saved = localStorage.getItem("lang");
-    if (saved) setLangState(saved);
-  }, []);
-
-  // Αποθήκευσε στο localStorage όταν αλλάζει
   const setLang = (newLang: string) => {
     setLangState(newLang);
     localStorage.setItem("lang", newLang);
+    // Αποθήκευσε και σε cookie για το middleware
+    document.cookie = `lang=${newLang};path=/;max-age=31536000`;
   };
 
   return (
