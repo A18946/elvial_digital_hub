@@ -1,11 +1,12 @@
 "use client";
 
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useState, useEffect } from "react";
 
 const LanguageContext = createContext(null);
 
 export function LanguageProvider({ children }) {
   const [lang, setLangState] = useState(() => {
+    // Διάβασε αμέσως από localStorage κατά την αρχικοποίηση
     if (typeof window !== "undefined") {
       return localStorage.getItem("lang") || "en";
     }
@@ -15,8 +16,6 @@ export function LanguageProvider({ children }) {
   const setLang = (newLang: string) => {
     setLangState(newLang);
     localStorage.setItem("lang", newLang);
-    // Αποθήκευσε και σε cookie για το middleware
-    document.cookie = `lang=${newLang};path=/;max-age=31536000`;
   };
 
   return (

@@ -61,9 +61,10 @@ export default function Menu() {
   useEffect(() => {
     async function fetchMenu() {
       try {
+        console.log("FETCHING MENU FOR LANG:", lang);
         const res = await fetch(`/api/menu?lang=${lang}`);
         const json = await res.json();
-
+        console.log("MENU TITLES:", json.data?.map((i: any) => i.attributes?.title));
         const data = json.data || [];
 
         console.log("✅ RAW menu:", data);
