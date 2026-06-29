@@ -4,30 +4,31 @@ import { useState, useEffect } from "react";
 import { useLanguage } from "../context/LanguageContext";
 
 const linksMap: Record<string, string> = {
-  "hinged systems": "/page/hinged-systems",
-  "sliding systems": "/page/sliding-systems",
-  "folding doors": "/page/folding-doors",
-  "entrance systems": "/page/entrance-doors",
-  "facades systems": "/page/facades",
-  "outdoor systems": "/page/outdoor",
-  "sun shading systems": "/page/sun-shading",
-  "various systems": "/page/various",
-  "digital services": "/page/digital-services",
-  "general manuals": "/page/general-manuals",
-  "ανοιγόμενα συστήματα": "/page/hinged-systems",
-  "συρόμενα συστήματα": "/page/sliding-systems",
-  "φυσσούνες": "/page/folding-doors",
-  "είσοδοι": "/page/entrance-doors",
-  "υαλοπετάσματα": "/page/facades",
-  "λύσεις outdoor": "/page/outdoor",
-  "σκίαση": "/page/sun-shading",
-  "διάφορα": "/page/various",
-  "ψηφιακές υπηρεσίες": "/page/digital-services",
-  "γενικά εγχειρίδια": "/page/general-manuals",
+  "hinged systems": "/en/page/hinged-systems",
+  "sliding systems": "/en/page/sliding-systems",
+  "folding doors": "/en/page/folding-doors",
+  "entrance systems": "/en/page/entrance-doors",
+  "facades systems": "/en/page/facades",
+  "outdoor systems": "/en/page/outdoor",
+  "sun shading systems": "/en/page/sun-shading",
+  "various systems": "/en/page/various",
+  "digital services": "/en/page/digital-services",
+  "general manuals": "/en/page/general-manuals",
+  "ανοιγόμενα συστήματα": "/el/page/hinged-systems",
+  "συρόμενα συστήματα": "/el/page/sliding-systems",
+  "φυσσούνες": "/el/page/folding-doors",
+  "είσοδοι": "/el/page/entrance-doors",
+  "υαλοπετάσματα": "/el/page/facades",
+  "λύσεις outdoor": "/el/page/outdoor",
+  "σκίαση": "/el/page/sun-shading",
+  "διάφορα": "/el/page/various",
+  "ψηφιακές υπηρεσίες": "/el/page/digital-services",
+  "γενικά εγχειρίδια": "/el/page/general-manuals",
 };
 
 export default function CategoriesClient({ homeContent }: { homeContent: any }) {
   const { lang } = useLanguage();
+  
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
