@@ -18,9 +18,42 @@ type MenuItem = {
 export default function Menu() {
   const [open, setOpen] = useState(false);
   const [tree, setTree] = useState<MenuItem[]>([]);
+
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userName, setUserName] = useState("");
+
   const { lang } = useLanguage();
 
-  const linksMap = {
+  useEffect(() => {
+    const checkLogin = () => {
+      const token = localStorage.getItem("drupal_token");
+      const name = localStorage.getItem("drupal_name");
+
+      setIsLoggedIn(!!token);
+      setUserName(name || "");
+    };
+
+    checkLogin();
+
+    window.addEventListener("storage", checkLogin);
+
+    return () => {
+      window.removeEventListener("storage", checkLogin);
+    };
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem("drupal_token");
+    localStorage.removeItem("drupal_uid");
+    localStorage.removeItem("drupal_name");
+
+    setIsLoggedIn(false);
+    setUserName("");
+
+    window.location.href = `/${lang}`;
+  };
+
+  const linksMap: Record<string, string> = {
     "hinged systems": "/page/hinged-systems",
     "sliding systems": "/page/sliding-systems",
     "folding doors": "/page/folding-doors",
@@ -32,91 +65,94 @@ export default function Menu() {
     "digital services": "/page/digital-services",
   };
 
-  // ✅ BUILD TREE (NEW)
- function buildTree(items) {
-  const map = {};
-  const roots = [];
+  function buildTree(items: any[]) {
+    const map: Record<string, any> = {};
+    const roots: any[] = [];
 
-  items.forEach((item) => {
-    map[item.id] = { ...item, children: [] };
-  });
+    items.forEach((item) => {
+      map[item.id] = { ...item, children: [] };
+    });
 
-  items.forEach((item) => {
-    const parent = item.attributes.parent;
+    items.forEach((item) => {
+      const parent = item.attributes.parent;
 
-    if (!parent || parent === "") {
-      roots.push(map[item.id]);
-    } else {
-      if (map[parent]) {
+      if (!parent || parent === "") {
+        roots.push(map[item.id]);
+      } else if (map[parent]) {
         map[parent].children.push(map[item.id]);
       }
-    }
-  });
+    });
 
-  return roots;
-}
+    return roots;
+  }
 
-
-  // ✅ FETCH
   useEffect(() => {
     async function fetchMenu() {
       try {
-        console.log("FETCHING MENU FOR LANG:", lang);
         const res = await fetch(`/api/menu?lang=${lang}`);
         const json = await res.json();
-        console.log("MENU TITLES:", json.data?.map((i: any) => i.attributes?.title));
         const data = json.data || [];
-
-        console.log("✅ RAW menu:", data);
 
         const built = buildTree(data);
 
-        console.log("🌳 TREE:", built);
-
         setTree(built);
       } catch (e) {
-        console.error("❌ Menu fetch error:", e);
+        console.error("Menu fetch error:", e);
       }
     }
 
     fetchMenu();
   }, [lang]);
 
-  // ✅ FIX URL
   const fixUrl = (url: string) => {
     if (!url) return "#";
     if (url.startsWith("http")) return url;
     return url.startsWith("/") ? url : `/${url}`;
   };
 
-  // ✅ RECURSIVE RENDER (NEW)
   function renderMenu(items: MenuItem[]) {
     return (
       <div>
         {items.map((item) => {
-          const isExternal = item.attributes.url?.startsWith("http");
-          
-        const titleKey = item.attributes.title?.toLowerCase().trim();
+          const isExternal =
+            item.attributes.url?.startsWith("http");
 
-        const href = linksMap[titleKey] || fixUrl(item.attributes.url);
+          const titleKey =
+            item.attributes.title?.toLowerCase().trim();
 
+          const href =
+            linksMap[titleKey] ||
+            fixUrl(item.attributes.url);
 
           return (
             <div key={item.id} style={{ marginBottom: 15 }}>
               <a
                 href={href}
                 target={isExternal ? "_blank" : undefined}
-                rel={isExternal ? "noopener noreferrer" : undefined}
-                style={{ textDecoration: "none", color: "black" }}
+                rel={
+                  isExternal
+                    ? "noopener noreferrer"
+                    : undefined
+                }
+                style={{
+                  textDecoration: "none",
+                  color: "black",
+                }}
               >
                 <strong>{item.attributes.title}</strong>
               </a>
 
-              {item.children && item.children.length > 0 && (
-                <div style={{ marginLeft: 15, marginTop: 5 }}>
-                  {renderMenu(item.children)}
-                </div>
-              )}
+              {item.children &&
+                item.children.length > 0 && (
+                  <div
+                    style={{
+                      marginLeft: 15,
+                      marginTop: 5,
+                    }}
+                  >
+                    {renderMenu(item.children)}
+                  </div>
+                )}
             </div>
           );
         })}
@@ -135,11 +171,39 @@ export default function Menu() {
           gap: 10,
         }}
       >
-        <a href="/">{lang === "en" ? "Home" : "Αρχική"}</a>
+        <a href={`/${lang}`}>
+          {lang === "en" ? "Home" : "Αρχική"}
+        </a>
+
         <span>|</span>
+
         <button onClick={() => setOpen(true)}>
           {lang === "en" ? "Menu" : "Μενού"}
         </button>
+
+        <span>|</span>
+
+        {isLoggedIn ? (
+          <>
+            <span>
+              {lang === "en"
+                ? `Welcome ${userName}`
+                : `Καλώς ήρθες ${userName}`}
+            </span>
+
+            <button onClick={handleLogout}>
+              {lang === "en"
+                ? "Logout"
+                : "Αποσύνδεση"}
+            </button>
+          </>
+        ) : (
+          <a href={`/${lang}/login`}>
+            {lang === "en"
+              ? "Login"
+              : "Σύνδεση"}
+          </a>
+        )}
       </div>
 
       {open && (
@@ -158,10 +222,13 @@ export default function Menu() {
           }}
         >
           <div style={{ marginBottom: 20 }}>
-            <button onClick={() => setOpen(false)}>✕</button>
+            <button
+              onClick={() => setOpen(false)}
+            >
+              ✕
+            </button>
           </div>
 
-          {/* ✅ FULL TREE */}
           {renderMenu(tree)}
         </div>
       )}
