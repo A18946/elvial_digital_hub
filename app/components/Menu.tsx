@@ -198,14 +198,20 @@ export default function Menu() {
             </button>
           </>
         ) : (
-          <a href={`/${lang}/login`}>
-            {lang === "en"
-              ? "Login"
-              : "Σύνδεση"}
-          </a>
-        )}
-      </div>
+  <>
+    <a href={`/${lang}/login`}>
+      {lang === "en" ? "Login" : "Σύνδεση"}
+    </a>
 
+    <span>|</span>
+
+    <a href={`/${lang}/register`}>
+      {lang === "en" ? "Register" : "Εγγραφή"}
+    </a>
+  </>
+)}
+      </div>
+      
       {open && (
         <div
           style={{
