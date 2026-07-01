@@ -10,40 +10,30 @@ export async function POST(request: Request) {
     });
     const csrfToken = await tokenRes.text();
 
-    // Βήμα 2: Αν μοιάζει με email, βρες το username πρώτα
+    // Βήμα 2: Αν είναι email, βρες το username πρώτα
     let loginName = username;
 
-    if (username.includes("@")) {
-  const credentials = Buffer.from(
-    `${process.env.DRUPAL_ADMIN_USER}:${process.env.DRUPAL_ADMIN_PASS}`
-  ).toString("base64");
+   if (username.includes("@")) {
 
-  const userLookup = await fetch(
-    `${DRUPAL_BASE}/jsonapi/user/user?filter[mail]=${encodeURIComponent(username)}&fields[user--user]=name`,
+  const lookupRes = await fetch(
+    "https://darkcyan-koala-320694.hostingersite.com/api/user-by-email",
     {
+      method: "POST",
       headers: {
-        "Content-Type": "application/vnd.api+json",
-        "Authorization": `Basic ${credentials}`,
+        "Content-Type": "application/json",
       },
-      cache: "no-store",
+      body: JSON.stringify({
+        email: username,
+      }),
     }
   );
 
-  console.log("USER LOOKUP STATUS:", userLookup.status);
-  const userData = await userLookup.json();
-  console.log("USER LOOKUP DATA:", JSON.stringify(userData?.data?.[0]));
+  const lookup = await lookupRes.json();
 
-  const foundName = userData?.data?.[0]?.attributes?.name;
-  if (foundName) {
-    loginName = foundName;
-  } else {
-    return Response.json(
-      { error: "Δεν βρέθηκε χρήστης με αυτό το email" },
-      { status: 401 }
-    );
+  if (lookup.username) {
+    loginName = lookup.username;
   }
 }
-	
 
     // Βήμα 3: Login με username
     const res = await fetch(`${DRUPAL_BASE}/user/login?_format=json`, {
