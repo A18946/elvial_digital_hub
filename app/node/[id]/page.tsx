@@ -163,11 +163,16 @@ console.log(
     })
   );
   const filteredSpecs = specs.filter((s) => s.label || s.value);
-
+  console.log("=== BIM TEST START ===");
   // DOWNLOADS
   const downloadsData = await getDownloads(id);
   
   
+const bimData = await getBimFiles(id);
+
+console.log("=== BIM DATA ===");
+console.log(JSON.stringify(bimData));
+
 console.log(
   "BIM DATA:",
   JSON.stringify(bimData, null, 2)
