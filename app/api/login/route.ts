@@ -14,6 +14,10 @@ export async function POST(request: Request) {
     let loginName = username;
 
    if (username.includes("@")) {
+	
+console.log("EMAIL LOGIN START");
+console.log("EMAIL:", username);
+
 
   const lookupRes = await fetch(
     "https://darkcyan-koala-320694.hostingersite.com/api/user-by-email",
@@ -28,8 +32,14 @@ export async function POST(request: Request) {
     }
   );
 
-  const lookup = await lookupRes.json();
+  
+console.log("LOOKUP STATUS:", lookupRes.status);
 
+const lookupText = await lookupRes.text();
+
+console.log("LOOKUP BODY:", lookupText);
+
+  
   if (lookup.username) {
     loginName = lookup.username;
   }
