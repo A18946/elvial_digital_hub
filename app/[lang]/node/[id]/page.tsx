@@ -66,10 +66,10 @@ async function getDownloads(nodeUuid: string) {
   );
   if (!res.ok) return [];
   const json = await res.json();
-  
+
   // Τα template refs έχουν μόνο id/type, κάνουμε fetch κάθε ένα ξεχωριστά
   const templateRefs = json.data || [];
-  
+
   const templates = await Promise.all(
     templateRefs.map(async (ref: any) => {
       const tRes = await fetch(
@@ -81,12 +81,40 @@ async function getDownloads(nodeUuid: string) {
       return tJson.data;
     })
   );
-  
+
   return templates.filter(Boolean);
+}
+
+// BIM — ακριβώς ίδια λογική με getDownloads, μόνο field_bim αντί για field_template
+async function getBimFiles(nodeUuid: string) {
+  const res = await fetch(
+    `https://darkcyan-koala-320694.hostingersite.com/jsonapi/node/product/${nodeUuid}/field_bim`,
+    { cache: "no-store" }
+  );
+  if (!res.ok) return [];
+  const json = await res.json();
+
+  const bimRefs = json.data || [];
+
+  const bimTemplates = await Promise.all(
+    bimRefs.map(async (ref: any) => {
+      const tRes = await fetch(
+        `https://darkcyan-koala-320694.hostingersite.com/jsonapi/node/template/${ref.id}`,
+        { cache: "no-store" }
+      );
+      if (!tRes.ok) return null;
+      const tJson = await tRes.json();
+      return tJson.data;
+    })
+  );
+
+  return bimTemplates.filter(Boolean);
 }
 
 export default async function Page({ params }: any) {
   const { id } = await params;
+  console.log("!!!!! PAGE.TSX IS RUNNING FOR ID:", id);
+
   const json = await getProduct(id);
   if (!json) return <div>Not found</div>;
 
@@ -152,6 +180,16 @@ export default async function Page({ params }: any) {
     .filter(Boolean)
     .join("");
   console.log("DOWNLOADS BODY RAW:", downloadsBody);
+
+  // BIM
+  const bimData = await getBimFiles(id);
+  const bimBody = bimData
+    .map((n: any) => n.attributes?.body?.processed || n.attributes?.body?.value || "")
+    .filter(Boolean)
+    .join("");
+  console.log("BIM DATA COUNT:", bimData.length);
+  console.log("BIM BODY RAW:", bimBody);
+
   return (
     <main style={{ padding: 40, maxWidth: 900 }}>
       {/* Product Title */}
@@ -163,9 +201,9 @@ export default async function Page({ params }: any) {
           <img
             src={imageUrl}
             alt={attr.title}
-            style={{ 
-              maxWidth: "50%", 
-              height: "auto", 
+            style={{
+              maxWidth: "50%",
+              height: "auto",
               display: "block",
               borderRadius: "8px"
             }}
@@ -192,9 +230,9 @@ export default async function Page({ params }: any) {
             <tr style={{ borderBottom: "1px solid #eee" }}>
               <td style={{ padding: "12px 16px", fontWeight: "bold" }}>Download File</td>
               <td style={{ padding: "12px 16px" }}>
-                <a 
-                  href={downloadUrl} 
-                  target="_blank" 
+                <a
+                  href={downloadUrl}
+                  target="_blank"
                   rel="noopener noreferrer"
                   style={{ color: "#007bff", textDecoration: "none" }}
                 >
@@ -224,14 +262,22 @@ export default async function Page({ params }: any) {
           </table>
         </div>
       )}
-      
+
       {/* Downloads Section */}
       {downloadsBody && (
-  <div style={{ marginBottom: 30 }}>
-    <h2 style={{ borderBottom: "1px solid #eee", paddingBottom: "10px" }}>Downloads</h2>
-    <div dangerouslySetInnerHTML={{ __html: fixBodyLinks(downloadsBody) }} />
-  </div>
-)}
+        <div style={{ marginBottom: 30 }}>
+          <h2 style={{ borderBottom: "1px solid #eee", paddingBottom: "10px" }}>Downloads</h2>
+          <div dangerouslySetInnerHTML={{ __html: fixBodyLinks(downloadsBody) }} />
+        </div>
+      )}
+
+      {/* BIM Section */}
+      {bimBody && (
+        <div style={{ marginBottom: 30 }}>
+          <h2 style={{ borderBottom: "1px solid #eee", paddingBottom: "10px" }}>BIM</h2>
+          <div dangerouslySetInnerHTML={{ __html: fixBodyLinks(bimBody) }} />
+        </div>
+      )}
     </main>
   );
 }

@@ -25,9 +25,8 @@ async function getProduct(uuid: string) {
   if (!res.ok) return null;
   return res.json();
 }
-// Πρόσθεσε αυτή τη function πριν το export default
+
 function fixBodyLinks(html: string): string {
-  // 1. js-flipbook-link: αντικατάσταση href="#" με το data-href-en
   let fixed = html.replace(
     /class="js-flipbook-link"[^>]*href="#"[^>]*data-href-el="([^"]*)"[^>]*data-href-en="([^"]*)"/g,
     (match, el, en) => {
@@ -36,7 +35,6 @@ function fixBodyLinks(html: string): string {
     }
   );
 
-  // Αν το data-href-en έρχεται πριν το data-href-el
   fixed = fixed.replace(
     /class="js-flipbook-link"[^>]*href="#"[^>]*data-href-en="([^"]*)"[^>]*data-href-el="([^"]*)"/g,
     (match, en, el) => {
@@ -45,13 +43,11 @@ function fixBodyLinks(html: string): string {
     }
   );
 
-  // 2. PDF links: /sites/default/files/ → full Drupal URL
   fixed = fixed.replace(
     /href="\/sites\/default\/files\//g,
     `href="https://darkcyan-koala-320694.hostingersite.com/sites/default/files/`
   );
 
-  // 3. Relative pdf-proxy links
   fixed = fixed.replace(
     /href="\/pdf-proxy\//g,
     'href="/flipbook/'
@@ -59,6 +55,7 @@ function fixBodyLinks(html: string): string {
 
   return fixed;
 }
+
 async function getDownloads(nodeUuid: string) {
   const res = await fetch(
     `https://darkcyan-koala-320694.hostingersite.com/jsonapi/node/product/${nodeUuid}/field_template`,
@@ -66,10 +63,9 @@ async function getDownloads(nodeUuid: string) {
   );
   if (!res.ok) return [];
   const json = await res.json();
-  
-  // Τα template refs έχουν μόνο id/type, κάνουμε fetch κάθε ένα ξεχωριστά
+
   const templateRefs = json.data || [];
-  
+
   const templates = await Promise.all(
     templateRefs.map(async (ref: any) => {
       const tRes = await fetch(
@@ -81,13 +77,38 @@ async function getDownloads(nodeUuid: string) {
       return tJson.data;
     })
   );
-  
+
   return templates.filter(Boolean);
 }
 
+async function getBimFiles(nodeUuid: string) {
+  const res = await fetch(
+    `https://darkcyan-koala-320694.hostingersite.com/jsonapi/node/product/${nodeUuid}/field_bim`,
+    { cache: "no-store" }
+  );
+  if (!res.ok) return [];
+  const json = await res.json();
+
+  const bimRefs = json.data || [];
+
+  const bimTemplates = await Promise.all(
+    bimRefs.map(async (ref: any) => {
+      const tRes = await fetch(
+        `https://darkcyan-koala-320694.hostingersite.com/jsonapi/node/template/${ref.id}`,
+        { cache: "no-store" }
+      );
+      if (!tRes.ok) return null;
+      const tJson = await tRes.json();
+      return tJson.data;
+    })
+  );
+
+  return bimTemplates.filter(Boolean);
+}
 
 export default async function Page({ params }: any) {
   const { id } = await params;
+  console.log("!!!!! THIS FILE IS ACTUALLY RUNNING !!!!!", id);
   const json = await getProduct(id);
   if (!json) return <div>Not found</div>;
 
@@ -95,32 +116,10 @@ export default async function Page({ params }: any) {
   const included = json.included || [];
   const attr = product.attributes;
   const rel = product.relationships;
-  // BIM FILES
-const bimRefs = rel?.field_bim?.data || [];
 
-console.log(
-  "FIELD BIM:",
-  JSON.stringify(bimRefs, null, 2)
-);
-
-const bimTemplates = bimRefs
-  .map((ref: any) =>
-    included.find((i: any) => i.id === ref.id)
-  )
-  .filter(Boolean);
-
-console.log(
-  "BIM TEMPLATES:",
-  JSON.stringify(bimTemplates, null, 2)
-);
-
-  // IMAGE
-  // IMAGE - ίδιο pattern με category page
-  // IMAGE - είναι array, παίρνουμε το πρώτο
   const imageMediaUUID = rel?.field__image?.data?.[0]?.id;
   const imageUrl = imageMediaUUID ? await getImageFromMedia(imageMediaUUID) : null;
 
-  // CATEGORY & TAG
   const categoryId = rel?.field_category?.data?.id;
   const category = included.find((i: any) => i.id === categoryId);
   const categoryName = category?.attributes?.name || "";
@@ -129,14 +128,12 @@ console.log(
   const tag = included.find((i: any) => i.id === tagId);
   const tagName = tag?.attributes?.name || "";
 
-  // DOWNLOAD FILE
   const downloadFileId = rel?.field_download_file?.data?.id;
   const downloadFile = included.find((i: any) => i.id === downloadFileId);
   const downloadUrl = downloadFile
     ? "https://darkcyan-koala-320694.hostingersite.com" + downloadFile.attributes.uri.url
     : null;
-  
-  // SPECIFICATIONS
+
   const descRefs = rel?.field_description?.data || [];
   const descParagraphs = descRefs
     .map((ref: any) => included.find((i: any) => i.id === ref.id))
@@ -163,43 +160,29 @@ console.log(
     })
   );
   const filteredSpecs = specs.filter((s) => s.label || s.value);
-  console.log("=== BIM TEST START ===");
-  // DOWNLOADS
+
   const downloadsData = await getDownloads(id);
-  
-  
-const bimData = await getBimFiles(id);
+  const bimData = await getBimFiles(id);
 
-console.log("=== BIM DATA ===");
-console.log(JSON.stringify(bimData));
+  console.log("BIM DATA COUNT:", bimData.length);
 
-console.log(
-  "BIM DATA:",
-  JSON.stringify(bimData, null, 2)
-);
-
-console.log(
-  "FIRST BIM:",
-  JSON.stringify(bimData[0], null, 2)
-);
-
-
-const bimBody = bimTemplates
-  .map((n: any) =>
-    n.attributes?.body?.processed ||
-    n.attributes?.body?.value ||
-    ""
-  )
-  .filter(Boolean)
-  .join("");
-
-console.log("BIM BODY:", bimBody);
+  const bimBody = bimData
+    .map((n: any) =>
+      n.attributes?.body?.processed ||
+      n.attributes?.body?.value ||
+      ""
+    )
+    .filter(Boolean)
+    .join("");
 
   const downloadsBody = downloadsData
     .map((n: any) => n.attributes?.body?.processed || n.attributes?.body?.value || "")
     .filter(Boolean)
     .join("");
-  
+
+  console.log("DOWNLOADS BODY RAW:", downloadsBody);
+  console.log("BIM BODY RAW:", bimBody);
+
   return (
     <main style={{ padding: 40, maxWidth: 900 }}>
       {/* Product Title */}
@@ -211,9 +194,9 @@ console.log("BIM BODY:", bimBody);
           <img
             src={imageUrl}
             alt={attr.title}
-            style={{ 
-              maxWidth: "50%", 
-              height: "auto", 
+            style={{
+              maxWidth: "50%",
+              height: "auto",
               display: "block",
               borderRadius: "8px"
             }}
@@ -240,9 +223,9 @@ console.log("BIM BODY:", bimBody);
             <tr style={{ borderBottom: "1px solid #eee" }}>
               <td style={{ padding: "12px 16px", fontWeight: "bold" }}>Download File</td>
               <td style={{ padding: "12px 16px" }}>
-                <a 
-                  href={downloadUrl} 
-                  target="_blank" 
+                <a
+                  href={downloadUrl}
+                  target="_blank"
                   rel="noopener noreferrer"
                   style={{ color: "#007bff", textDecoration: "none" }}
                 >
@@ -251,7 +234,6 @@ console.log("BIM BODY:", bimBody);
               </td>
             </tr>
           )}
-          
         </tbody>
       </table>
 
@@ -273,14 +255,22 @@ console.log("BIM BODY:", bimBody);
           </table>
         </div>
       )}
-      
+
+      {/* TEMP DEBUG - remove after diagnosing */}
+      <pre style={{ background: "#111", color: "#0f0", padding: 12, fontSize: 12, overflowX: "auto" }}>
+        bimData.length: {bimData.length}
+        {"\n"}bimBody.length: {bimBody.length}
+        {"\n"}raw bimData: {JSON.stringify(bimData, null, 2).slice(0, 2000)}
+      </pre>
+
       {/* Downloads Section */}
       {downloadsBody && (
-  <div style={{ marginBottom: 30 }}>
-    <h2 style={{ borderBottom: "1px solid #eee", paddingBottom: "10px" }}>Downloads</h2>
-    <div dangerouslySetInnerHTML={{ __html: fixBodyLinks(downloadsBody) }} />
-  </div>
-)}
+        <div style={{ marginBottom: 30 }}>
+          <h2 style={{ borderBottom: "1px solid #eee", paddingBottom: "10px" }}>Downloads</h2>
+          <div dangerouslySetInnerHTML={{ __html: fixBodyLinks(downloadsBody) }} />
+        </div>
+      )}
+
       {/* BIM Section */}
       {bimBody && (
         <div style={{ marginBottom: 30 }}>
