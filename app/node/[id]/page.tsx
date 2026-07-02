@@ -85,6 +85,7 @@ async function getDownloads(nodeUuid: string) {
   return templates.filter(Boolean);
 }
 
+
 export default async function Page({ params }: any) {
   const { id } = await params;
   const json = await getProduct(id);
@@ -94,6 +95,24 @@ export default async function Page({ params }: any) {
   const included = json.included || [];
   const attr = product.attributes;
   const rel = product.relationships;
+  // BIM FILES
+const bimRefs = rel?.field_bim?.data || [];
+
+console.log(
+  "FIELD BIM:",
+  JSON.stringify(bimRefs, null, 2)
+);
+
+const bimTemplates = bimRefs
+  .map((ref: any) =>
+    included.find((i: any) => i.id === ref.id)
+  )
+  .filter(Boolean);
+
+console.log(
+  "BIM TEMPLATES:",
+  JSON.stringify(bimTemplates, null, 2)
+);
 
   // IMAGE
   // IMAGE - ίδιο pattern με category page
@@ -116,7 +135,7 @@ export default async function Page({ params }: any) {
   const downloadUrl = downloadFile
     ? "https://darkcyan-koala-320694.hostingersite.com" + downloadFile.attributes.uri.url
     : null;
-
+  
   // SPECIFICATIONS
   const descRefs = rel?.field_description?.data || [];
   const descParagraphs = descRefs
@@ -147,11 +166,35 @@ export default async function Page({ params }: any) {
 
   // DOWNLOADS
   const downloadsData = await getDownloads(id);
+  
+  
+console.log(
+  "BIM DATA:",
+  JSON.stringify(bimData, null, 2)
+);
+
+console.log(
+  "FIRST BIM:",
+  JSON.stringify(bimData[0], null, 2)
+);
+
+
+const bimBody = bimTemplates
+  .map((n: any) =>
+    n.attributes?.body?.processed ||
+    n.attributes?.body?.value ||
+    ""
+  )
+  .filter(Boolean)
+  .join("");
+
+console.log("BIM BODY:", bimBody);
+
   const downloadsBody = downloadsData
     .map((n: any) => n.attributes?.body?.processed || n.attributes?.body?.value || "")
     .filter(Boolean)
     .join("");
-  console.log("DOWNLOADS BODY RAW:", downloadsBody);
+  
   return (
     <main style={{ padding: 40, maxWidth: 900 }}>
       {/* Product Title */}
@@ -203,6 +246,7 @@ export default async function Page({ params }: any) {
               </td>
             </tr>
           )}
+          
         </tbody>
       </table>
 
@@ -232,6 +276,13 @@ export default async function Page({ params }: any) {
     <div dangerouslySetInnerHTML={{ __html: fixBodyLinks(downloadsBody) }} />
   </div>
 )}
+      {/* BIM Section */}
+      {bimBody && (
+        <div style={{ marginBottom: 30 }}>
+          <h2 style={{ borderBottom: "1px solid #eee", paddingBottom: "10px" }}>BIM</h2>
+          <div dangerouslySetInnerHTML={{ __html: fixBodyLinks(bimBody) }} />
+        </div>
+      )}
     </main>
   );
 }
