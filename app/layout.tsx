@@ -1,6 +1,7 @@
 import Menu from "./components/Menu";
 import LanguageSwitcherExample from "./LanguageSwitcherExample";
 import { LanguageProvider } from "./context/LanguageContext";
+import CertificateLinks from "./components/CertificateLinks"; 
 
 export default function RootLayout({ children }: any) {
   return (
@@ -16,9 +17,9 @@ export default function RootLayout({ children }: any) {
           <Menu />
 
           {children}
-
+      
         </LanguageProvider>
-
+        <CertificateLinks />
       </body>
     </html>
   );

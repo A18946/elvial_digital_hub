@@ -26,12 +26,20 @@ async function getProduct(uuid: string) {
   return res.json();
 }
 // Πρόσθεσε αυτή τη function πριν το export default
-function fixBodyLinks(html: string): string {
+
+function fixBodyLinks(
+  html: string,
+  lang: string
+): string {
+
   // 1. js-flipbook-link: αντικατάσταση href="#" με το data-href-en
   let fixed = html.replace(
     /class="js-flipbook-link"[^>]*href="#"[^>]*data-href-el="([^"]*)"[^>]*data-href-en="([^"]*)"/g,
     (match, el, en) => {
-      const href = en.replace("/pdf-proxy/", "/flipbook/");
+      const href =
+  lang === "el"
+    ? el.replace("/pdf-proxy/", "/flipbook/")
+    : en.replace("/pdf-proxy/", "/flipbook/");
       return `href="${href}" target="_blank"`;
     }
   );
@@ -40,7 +48,10 @@ function fixBodyLinks(html: string): string {
   fixed = fixed.replace(
     /class="js-flipbook-link"[^>]*href="#"[^>]*data-href-en="([^"]*)"[^>]*data-href-el="([^"]*)"/g,
     (match, en, el) => {
-      const href = en.replace("/pdf-proxy/", "/flipbook/");
+      const href =
+  lang === "el"
+    ? el.replace("/pdf-proxy/", "/flipbook/")
+    : en.replace("/pdf-proxy/", "/flipbook/");
       return `href="${href}" target="_blank"`;
     }
   );
@@ -56,6 +67,11 @@ function fixBodyLinks(html: string): string {
     /href="\/pdf-proxy\//g,
     'href="/flipbook/'
   );
+  fixed = fixed.replace(
+  /href="\/certificates\/([^"]+)"/g,
+  'href="#" class="certificate-link" data-certificate="$1"'
+);
+
 
   return fixed;
 }
@@ -112,7 +128,7 @@ async function getBimFiles(nodeUuid: string) {
 }
 
 export default async function Page({ params }: any) {
-  const { id } = await params;
+  const { id, lang } = await params;
   console.log("!!!!! PAGE.TSX IS RUNNING FOR ID:", id);
 
   const json = await getProduct(id);
@@ -267,7 +283,7 @@ export default async function Page({ params }: any) {
       {downloadsBody && (
         <div style={{ marginBottom: 30 }}>
           <h2 style={{ borderBottom: "1px solid #eee", paddingBottom: "10px" }}>Downloads</h2>
-          <div dangerouslySetInnerHTML={{ __html: fixBodyLinks(downloadsBody) }} />
+          <div dangerouslySetInnerHTML={{ __html: fixBodyLinks(downloadsBody, lang) }} />
         </div>
       )}
 
@@ -275,9 +291,10 @@ export default async function Page({ params }: any) {
       {bimBody && (
         <div style={{ marginBottom: 30 }}>
           <h2 style={{ borderBottom: "1px solid #eee", paddingBottom: "10px" }}>BIM</h2>
-          <div dangerouslySetInnerHTML={{ __html: fixBodyLinks(bimBody) }} />
+          <div dangerouslySetInnerHTML={{ __html: fixBodyLinks(bimBody, lang) }} />
         </div>
       )}
+      
     </main>
   );
 }
