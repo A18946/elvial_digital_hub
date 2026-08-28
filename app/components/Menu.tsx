@@ -23,11 +23,7 @@ export default function Menu() {
   const [userName, setUserName] = useState("");
 
   const { lang } = useLanguage();
-  const [mounted, setMounted] = useState(false);  
-  useEffect(() => {  
-    setMounted(true);
-   }, []);   
-  
+
   useEffect(() => {
     const checkLogin = () => {
       const token = localStorage.getItem("drupal_token");
@@ -35,7 +31,6 @@ export default function Menu() {
 
       setIsLoggedIn(!!token);
       setUserName(name || "");
-      
     };
 
     checkLogin();
@@ -176,37 +171,42 @@ export default function Menu() {
           gap: 10,
         }}
       >
-        <a href={mounted ? `/${lang}` : "/en"}>
-  {mounted ? (lang === "en" ? "Home" : "Αρχική") : "Home"}
-</a>
- 
-<span>|</span>
- 
-<button onClick={() => setOpen(true)}>
-  {mounted ? (lang === "en" ? "Menu" : "Μενού") : "Menu"}
-</button>
- 
-<span>|</span>
- 
-{isLoggedIn ? (
+        <a href={`/${lang}`}>
+          {lang === "en" ? "Home" : "Αρχική"}
+        </a>
+
+        <span>|</span>
+
+        <button onClick={() => setOpen(true)}>
+          {lang === "en" ? "Menu" : "Μενού"}
+        </button>
+
+        <span>|</span>
+
+        {isLoggedIn ? (
+          <>
+            <span>
+              {lang === "en"
+                ? `Welcome ${userName}`
+                : `Καλώς ήρθες ${userName}`}
+            </span>
+
+            <button onClick={handleLogout}>
+              {lang === "en"
+                ? "Logout"
+                : "Αποσύνδεση"}
+            </button>
+          </>
+        ) : (
   <>
-    <span>
-      {mounted
-        ? (lang === "en" ? `Welcome ${userName}` : `Καλώς ήρθες ${userName}`)
-        : ""}
-    </span>
-    <button onClick={handleLogout}>
-      {mounted ? (lang === "en" ? "Logout" : "Αποσύνδεση") : "Logout"}
-    </button>
-  </>
-) : (
-  <>
-    <a href={mounted ? `/${lang}/login` : "/en/login"}>
-      {mounted ? (lang === "en" ? "Login" : "Σύνδεση") : "Login"}
+    <a href={`/${lang}/login`}>
+      {lang === "en" ? "Login" : "Σύνδεση"}
     </a>
+
     <span>|</span>
-    <a href={mounted ? `/${lang}/register` : "/en/register"}>
-      {mounted ? (lang === "en" ? "Register" : "Εγγραφή") : "Register"}
+
+    <a href={`/${lang}/register`}>
+      {lang === "en" ? "Register" : "Εγγραφή"}
     </a>
   </>
 )}
