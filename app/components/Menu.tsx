@@ -23,6 +23,7 @@ export default function Menu() {
   const [userName, setUserName] = useState("");
 
   const { lang } = useLanguage();
+  const linksMap = getLinksMap(lang);
 
   useEffect(() => {
     const checkLogin = () => {
