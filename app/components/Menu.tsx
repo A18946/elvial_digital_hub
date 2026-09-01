@@ -53,17 +53,32 @@ export default function Menu() {
     window.location.href = `/${lang}`;
   };
 
-  const linksMap: Record<string, string> = {
-    "hinged systems": "/page/hinged-systems",
-    "sliding systems": "/page/sliding-systems",
-    "folding doors": "/page/folding-doors",
-    "entrance doors": "/page/entrance-doors",
-    "facades systems": "/page/facades",
-    "outdoor systems": "/page/outdoor",
-    "sun shading systems": "/page/sun-shading",
-    "various": "/page/various",
-    "digital services": "/page/digital-services",
+  function getLinksMap(lang: string): Record<string, string> {
+  return {
+    "hinged systems": `/${lang}/page/hinged-systems`,
+    "sliding systems": `/${lang}/page/sliding-systems`,
+    "folding doors": `/${lang}/page/folding-doors`,
+    "entrance doors": `/${lang}/page/entrance-doors`,
+    "entrance systems": `/${lang}/page/entrance-doors`,
+    "facades systems": `/${lang}/page/facades`,
+    "outdoor systems": `/${lang}/page/outdoor`,
+    "sun shading systems": `/${lang}/page/sun-shading`,
+    "various": `/${lang}/page/various`,
+    "various systems": `/${lang}/page/various`,
+    "digital services": `/${lang}/page/digital-services`,
+    "general manuals": `/${lang}/page/general-manuals`,
+    "ανοιγόμενα συστήματα": `/${lang}/page/hinged-systems`,
+    "συρόμενα συστήματα": `/${lang}/page/sliding-systems`,
+    "φυσσούνες": `/${lang}/page/folding-doors`,
+    "είσοδοι": `/${lang}/page/entrance-doors`,
+    "υαλοπετάσματα": `/${lang}/page/facades`,
+    "λύσεις outdoor": `/${lang}/page/outdoor`,
+    "σκίαση": `/${lang}/page/sun-shading`,
+    "διάφορα": `/${lang}/page/various`,
+    "ψηφιακές υπηρεσίες": `/${lang}/page/digital-services`,
+    "γενικά εγχειρίδια": `/${lang}/page/general-manuals`,
   };
+}
 
   function buildTree(items: any[]) {
     const map: Record<string, any> = {};
